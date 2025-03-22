@@ -1,20 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import CodeEditor from './components/CodeEditor';
 import ConsoleOutput from './components/ConsoleOutput';
-import { executeCode } from './services/codeExecutor';
 
 function App() {
   const [code, setCode] = useState<string>('// Write your TypeScript code here\nconsole.log("Hello, World!");\n');
   const [outputs, setOutputs] = useState<Array<{ type: 'log' | 'error' | 'info' | 'warn', content: string, timestamp: number }>>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [worker, setWorker] = useState<Worker | null>(null);
 
-  const handleRunCode = async () => {
+  useEffect(() => {
+    const codeWorker = new Worker(
+      new URL('./workers/code-executor.worker.ts', import.meta.url),
+      { type: 'module' }
+    );
+
+    codeWorker.onmessage = (event) => {
+      if (event.data.type === 'console') {
+        setOutputs(prev => [...prev, {
+          type: event.data.method,
+          content: event.data.args.join(' '),
+          timestamp: event.data.timestamp
+        }]);
+      }
+    };
+
+    setWorker(codeWorker);
+
+    return () => {
+      codeWorker.terminate();
+    };
+  }, []);
+
+  const handleRunCode = useCallback(async () => {
+    if (!worker) return;
+
     setIsRunning(true);
     setOutputs([]);
     
     try {
-      const results = await executeCode(code);
-      setOutputs(results);
+      worker.postMessage({
+        type: 'EXECUTE',
+        code
+      });
     } catch (error) {
       setOutputs([{
         type: 'error',
@@ -24,7 +51,7 @@ function App() {
     } finally {
       setIsRunning(false);
     }
-  };
+  }, [worker, code]);
 
   return (
     <div className="container mx-auto p-4">
