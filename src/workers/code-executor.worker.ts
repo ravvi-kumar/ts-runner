@@ -39,21 +39,51 @@ function postConsoleMessage(method: ConsoleMessage['method'], args: any[]) {
 }
 
 // Simple TypeScript-like type stripping for now
+function transpileTypeScript(code: string): string {
+  const compilerOptions: ts.CompilerOptions = {
+    target: ts.ScriptTarget.ES2020,
+    module: ts.ModuleKind.ESNext,
+    strict: true,
+    esModuleInterop: true,
+    skipLibCheck: true,
+    forceConsistentCasingInFileNames: true,
+  };
+
+  const result = ts.transpileModule(code, {
+    compilerOptions,
+    reportDiagnostics: true,
+  });
+
+  if (result.diagnostics && result.diagnostics.length > 0) {
+    const errors = result.diagnostics
+      .map(diagnostic => {
+        const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+        return message;
+      })
+      .join('\n');
+    throw new Error(`TypeScript compilation errors:\n${errors}`);
+  }
+
+  return result.outputText;
+}
+
 function stripTypeAnnotations(code: string): string {
   try {
-    // Basic transformation to handle async/await
+    // First transpile TypeScript to JavaScript
+    const transpiledCode = transpileTypeScript(code);
+    
+    // Then wrap in async IIFE
     return `
       (async () => {
         try {
-          ${code}
+          ${transpiledCode}
         } catch (error) {
           console.error(error);
         }
       })();
     `;
   } catch (error) {
-    console.error('Error transforming code:', error);
-    return code;
+    throw error;
   }
 }
 
