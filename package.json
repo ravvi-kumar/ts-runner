@@ -12,7 +12,8 @@
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
     "@tailwindcss/vite": "^4.0.15",
-    "prettier": "^3.2.5",
+    "@types/prettier": "^3.0.0",
+    "prettier": "^3.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^4.0.15"

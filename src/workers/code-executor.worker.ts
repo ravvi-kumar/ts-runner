@@ -69,19 +69,8 @@ function transpileTypeScript(code: string): string {
 
 function stripTypeAnnotations(code: string): string {
   try {
-    // First transpile TypeScript to JavaScript
     const transpiledCode = transpileTypeScript(code);
-    
-    // Then wrap in async IIFE
-    return `
-      (async () => {
-        try {
-          ${transpiledCode}
-        } catch (error) {
-          console.error(error);
-        }
-      })();
-    `;
+    return transpiledCode;
   } catch (error) {
     throw error;
   }
@@ -95,21 +84,21 @@ function executeInContext(code: string) {
     clearTimeout,
     clearInterval,
     Promise,
+    Error,
+    undefined,
+    Object,
+    Array,
+    String,
+    Number,
+    Boolean,
   };
 
   const contextKeys = Object.keys(context).join(', ');
   const contextValues = Object.values(context);
 
-  // Create a new function with the context variables as parameters
   const executor = new Function(contextKeys, `
     'use strict';
-    try {
-      return (async () => { 
-        ${code}
-      })();
-    } catch (error) {
-      console.error(error);
-    }
+    ${code}
   `);
 
   return executor(...contextValues);
@@ -121,7 +110,11 @@ self.onmessage = async (event: MessageEvent<ExecutionMessage>) => {
       const jsCode = stripTypeAnnotations(event.data.code);
       await executeInContext(jsCode);
     } catch (error) {
-      postConsoleMessage('error', [error instanceof Error ? error.message : String(error)]);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const formattedError = errorMessage.includes('ReferenceError') 
+        ? `Runtime Error: ${errorMessage}`
+        : `${errorMessage}`;
+      postConsoleMessage('error', [formattedError]);
     }
   }
 };

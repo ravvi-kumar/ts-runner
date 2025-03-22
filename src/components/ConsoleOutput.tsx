@@ -48,7 +48,6 @@ const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ outputs }) => {
     >
       <div className="flex items-center justify-between mb-2 border-b border-gray-700 pb-2">
         <span className="text-gray-400">Console</span>
-        <span className="text-xs text-gray-500">JavaScript/TypeScript Output</span>
       </div>
       {outputs.length === 0 ? (
         <div className="text-gray-500 italic">No output</div>
@@ -61,7 +60,7 @@ const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ outputs }) => {
             <span className="text-gray-500 text-xs min-w-[70px]">
               {formatTimestamp(output.timestamp)}
             </span>
-            <span className="before:mr-2 before:text-gray-500">
+            <span className="before:mr-2 before:text-gray-500 text-xs">
               {output.content}
             </span>
           </div>
